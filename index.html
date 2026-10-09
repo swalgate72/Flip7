@@ -107,7 +107,7 @@ button:disabled{background:rgba(255,255,255,0.05)!important;color:#555!important
 .si-combo{font-family:'Crimson Text',serif;font-size:16px;color:#ddd;}
 .si-pts{font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--gold);letter-spacing:1px;white-space:nowrap;}
 .si-note{font-family:'Crimson Text',serif;font-size:13px;color:#778;font-style:italic;margin-top:2px;}
-#si-fab{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;background:var(--holo);border:2px solid var(--gold);border-radius:16px;color:var(--navy);font-family:'Cinzel',serif;font-size:10px;font-weight:900;letter-spacing:1.5px;padding:0;box-shadow:0 6px 24px rgba(150,120,240,0.55);display:none;width:64px;height:64px;text-align:center;line-height:1.5;}
+#si-fab{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;background:var(--holo);border:2px solid var(--gold);border-radius:16px;color:var(--navy);font-family:'Cinzel',serif;font-size:10px;font-weight:900;letter-spacing:1.5px;padding:0;box-shadow:0 6px 24px rgba(150,120,240,0.55);display:none;width:64px;height:64px;text-align:center;line-height:1.5;}
 
 #toast{display:none;position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:rgba(20,18,60,0.97);border:1px solid rgba(90,216,255,0.45);border-radius:14px;padding:14px 24px;color:#fff;font-size:14px;box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:700;max-width:380px;width:max-content;max-width:90vw;text-align:center;}
 </style>
@@ -200,7 +200,10 @@ button:disabled{background:rgba(255,255,255,0.05)!important;color:#555!important
     <button id="undo-btn" onclick="scorerUndo()" style="background:rgba(255,210,63,0.12);border:1px solid rgba(255,210,63,0.3);border-radius:8px;color:var(--gold);padding:6px 12px;font-size:13px;font-family:'Cinzel',serif;letter-spacing:1px;opacity:0.3;transition:opacity 0.2s;display:flex;align-items:center;gap:5px;" disabled><span style="font-size:16px;">&#8592;</span> Undo</button>
   </div>
   <div id="order-banner" style="display:none;">&#9651; DRAG TILES TO MATCH SEATS AROUND THE TABLE &#9661;</div>
-  <div id="sc-grid"></div>
+  <div id="sc-wrap" style="flex:1;min-height:0;position:relative;display:flex;">
+    <div id="sc-grid"></div>
+    <button id="si-fab" onclick="openScoringIndex()">HOW TO<br>SCORE</button>
+  </div>
   <div id="order-confirm-bar" style="display:none;">
     <button onclick="confirmTileOrder()" class="btn btn-holo" style="width:100%;padding:18px;border-radius:16px;font-size:18px;letter-spacing:3px;">CONFIRM &amp; DEAL</button>
   </div>
@@ -271,7 +274,6 @@ button:disabled{background:rgba(255,255,255,0.05)!important;color:#555!important
   </div>
 </div>
 
-<button id="si-fab" onclick="openScoringIndex()">HOW TO<br>SCORE</button>
 
 <div id="toast"></div>
 
