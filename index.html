@@ -132,6 +132,14 @@ button:disabled{background:rgba(255,255,255,0.05)!important;color:#555!important
       </div>
       <div id="leaderboard-list" style="background:rgba(255,255,255,0.04);border-radius:14px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;min-height:48px;"></div>
     </div>
+    <!-- Resume (shown when a game is in progress) -->
+    <div id="resume-card" style="display:none;margin-bottom:14px;">
+      <button onclick="resumeGame()" style="width:100%;padding:20px 24px;border-radius:20px;background:linear-gradient(135deg,#1d3f8f,#2a5fc0);border:3px solid var(--cyan);color:#fff;text-align:left;display:flex;align-items:center;gap:18px;box-shadow:0 8px 30px rgba(90,216,255,0.35);">
+        <div style="font-size:34px;flex-shrink:0;">&#9654;&#65039;</div>
+        <div style="min-width:0;"><div style="font-family:'Cinzel',serif;font-size:18px;font-weight:900;letter-spacing:2px;margin-bottom:4px;">Resume Game</div><div id="resume-sub" style="font-size:14px;color:rgba(255,255,255,0.75);font-family:'Crimson Text',serif;"></div></div>
+      </button>
+      <button onclick="discardActiveGame()" style="display:block;margin:8px auto 0;background:transparent;border:none;color:#778;font-size:12px;font-family:'Cinzel',serif;letter-spacing:1px;padding:6px 10px;">Discard this game</button>
+    </div>
     <!-- Start -->
     <button onclick="chooseMode()" style="width:100%;padding:22px 24px;border-radius:20px;background:var(--holo);border:3px solid var(--gold);color:var(--navy);text-align:left;display:flex;align-items:center;gap:18px;transition:all 0.2s;box-shadow:0 8px 30px rgba(150,120,240,0.4);" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       <div style="font-size:38px;flex-shrink:0;">&#127183;</div>
@@ -398,10 +406,54 @@ function confirmResetPoints(){document.getElementById('reset-modal').style.displ
 function closeResetModal(){document.getElementById('reset-modal').style.display='none';}
 function doResetPoints(){dbReset();closeResetModal();renderLeaderboard();showToast('Leaderboard reset');}
 
+// ── ACTIVE GAME PERSISTENCE ──────────────────────────────────────────────────
+var ACTIVE_KEY='flip7_active';
+var gameLive=false;
+function saveActive(){
+  if(!gameLive)return;
+  try{localStorage.setItem(ACTIVE_KEY,JSON.stringify({
+    players:players,currentIdx:currentIdx,dealerIdx:dealerIdx,roundNum:roundNum,
+    finalRound:finalRound,WINNING:WINNING,turnHistory:turnHistory,savedAt:Date.now()
+  }));}catch(e){}
+}
+function loadActive(){try{var d=localStorage.getItem(ACTIVE_KEY);return d?JSON.parse(d):null;}catch(e){return null;}}
+function clearActive(){try{localStorage.removeItem(ACTIVE_KEY);}catch(e){}}
+
+function renderResume(){
+  var g=loadActive(),card=document.getElementById('resume-card');
+  if(!g||!g.players||!g.players.length){card.style.display='none';return;}
+  var lead=g.players.slice().sort(function(a,b){return b.score-a.score;})[0];
+  var sub='Round '+g.roundNum+' \u2022 '+g.players.length+' players';
+  if(lead.score>0)sub+=' \u2022 '+lead.name+' leads on '+lead.score;
+  document.getElementById('resume-sub').textContent=sub;
+  card.style.display='block';
+}
+
+function resumeGame(){
+  var g=loadActive();
+  if(!g){renderResume();return;}
+  players=g.players;currentIdx=g.currentIdx;dealerIdx=g.dealerIdx;roundNum=g.roundNum;
+  finalRound=g.finalRound;WINNING=g.WINNING;turnHistory=g.turnHistory||[];
+  orderingPhase=false;dealerPickPhase=false;gameLive=true;
+  document.getElementById('order-banner').style.display='none';
+  document.getElementById('order-confirm-bar').style.display='none';
+  showScreen('scorer');
+  updateUndoBtnHidden(false);
+  updateUndoBtn();
+  renderGrid();
+  var wbMsg='Welcome back \u2014 '+esc(players[currentIdx].name)+' to score';
+  setTimeout(function(){showToast(wbMsg);},200);
+}
+
+function discardActiveGame(){
+  if(!window.confirm('Discard the game in progress? Scores from it won\'t be added to the leaderboard.'))return;
+  clearActive();gameLive=false;renderResume();
+}
+
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   document.getElementById(id).classList.add('active');
-  if(id==='mode-select')renderLeaderboard();
+  if(id==='mode-select'){renderLeaderboard();renderResume();var tt=document.getElementById('toast');if(tt)tt.style.display='none';}
   var fab=document.getElementById('si-fab');
   if(fab)fab.style.display=(id==='scorer'&&!orderingPhase&&!dealerPickPhase)?'block':'none';
 }
@@ -473,6 +525,7 @@ function startGame(){
 }
 
 function startScorer(){
+  gameLive=false;
   playerOrder=players.map(function(_,i){return i;});
   orderingPhase=true;
   showScreen('scorer');
@@ -529,6 +582,7 @@ function renderDealerPickGrid(){
 function pickDealer(idx){
   if(!dealerPickPhase)return;
   dealerPickPhase=false;
+  gameLive=true;
   dealerIdx=idx;
   currentIdx=(dealerIdx+1)%players.length;
   turnHistory=[];
@@ -538,7 +592,8 @@ function pickDealer(idx){
   document.getElementById('order-confirm-bar').style.display='none';
   document.getElementById('si-fab').style.display='block';
   renderGrid();
-  setTimeout(function(){showToast('\uD83C\uDCCF '+esc(players[dealerIdx].name)+' deals \u2014 '+esc(players[currentIdx].name)+' scores first');},150);
+  var dealMsg='\uD83C\uDCCF '+esc(players[dealerIdx].name)+' deals \u2014 '+esc(players[currentIdx].name)+' scores first';
+  setTimeout(function(){showToast(dealMsg);},150);
 }
 
 function updateUndoBtnHidden(h){document.getElementById('undo-btn').style.visibility=h?'hidden':'visible';}
@@ -698,6 +753,7 @@ function renderGrid(){
       grid.appendChild(tile);
     })(pos);
   }
+  saveActive();
   document.getElementById('sc-round-lbl').innerHTML='ROUND '+roundNum+'<br><span style="color:'+(finalRound?'#ff9fb0':'rgba(255,255,255,0.4)')+';">'+(finalRound?'🏁 FINAL ROUND':'Race to '+WINNING)+'</span>';
 }
 
@@ -868,6 +924,8 @@ function scorerAdvance(pIdx,earned,isBust,ops){
 }
 
 function endGame(){
+  gameLive=false;
+  clearActive();
   var sorted=players.slice().sort(function(a,b){return b.score-a.score;});
   var winner=sorted[0];
   document.getElementById('w-name').textContent=winner.name;
@@ -894,6 +952,7 @@ window.addEventListener('resize',function(){if(document.getElementById('scorer')
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 renderLeaderboard();
+renderResume();
 
 // ── KEEP-ALIVE ────────────────────────────────────────────────────────────────
 (function(){
