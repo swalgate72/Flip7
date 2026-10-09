@@ -205,7 +205,8 @@ button:disabled{background:rgba(255,255,255,0.05)!important;color:#555!important
     <button id="si-fab" onclick="openScoringIndex()">HOW TO<br>SCORE</button>
   </div>
   <div id="order-confirm-bar" style="display:none;">
-    <button onclick="confirmTileOrder()" class="btn btn-holo" style="width:100%;padding:18px;border-radius:16px;font-size:18px;letter-spacing:3px;">CONFIRM &amp; DEAL</button>
+    <button id="order-confirm-btn" onclick="confirmTileOrder()" class="btn btn-holo" style="width:100%;padding:18px;border-radius:16px;font-size:18px;letter-spacing:3px;">CONFIRM SEATS</button>
+    <button id="dealer-random-btn" onclick="pickDealer(Math.floor(Math.random()*players.length))" class="btn btn-holo" style="display:none;width:100%;padding:18px;border-radius:16px;font-size:16px;letter-spacing:2px;">&#127922; PICK DEALER AT RANDOM</button>
   </div>
 </div>
 
@@ -402,7 +403,7 @@ function showScreen(id){
   document.getElementById(id).classList.add('active');
   if(id==='mode-select')renderLeaderboard();
   var fab=document.getElementById('si-fab');
-  if(fab)fab.style.display=(id==='scorer'&&!orderingPhase)?'block':'none';
+  if(fab)fab.style.display=(id==='scorer'&&!orderingPhase&&!dealerPickPhase)?'block':'none';
 }
 
 // ── SETUP ─────────────────────────────────────────────────────────────────────
@@ -476,17 +477,60 @@ function startScorer(){
   orderingPhase=true;
   showScreen('scorer');
   document.getElementById('sc-round-lbl').textContent='';
+  dealerPickPhase=false;
+  document.getElementById('order-banner').innerHTML='&#9651; DRAG TILES TO MATCH SEATS AROUND THE TABLE &#9661;';
   document.getElementById('order-banner').style.display='block';
   document.getElementById('order-confirm-bar').style.display='block';
+  document.getElementById('order-confirm-btn').style.display='block';
+  document.getElementById('dealer-random-btn').style.display='none';
   updateUndoBtnHidden(true);
   renderOrderGrid();
 }
 
+var dealerPickPhase=false;
 function confirmTileOrder(){
   players=playerOrder.map(function(i){return players[i];});
-  dealerIdx=Math.floor(Math.random()*players.length);
-  currentIdx=(dealerIdx+1)%players.length;
   orderingPhase=false;
+  dealerPickPhase=true;
+  document.getElementById('order-banner').innerHTML='&#127183; TAP WHO IS DEALING FIRST';
+  document.getElementById('order-confirm-btn').style.display='none';
+  document.getElementById('dealer-random-btn').style.display='block';
+  renderDealerPickGrid();
+}
+
+function renderDealerPickGrid(){
+  var grid=document.getElementById('sc-grid');
+  grid.innerHTML='';
+  var n=players.length,L=gridLayout(n),cwPos=clockwiseGridPositions(n);
+  grid.style.gridTemplateColumns='repeat('+L.cols+',1fr)';
+  grid.style.gridTemplateRows='repeat('+L.rows+',1fr)';
+  players.forEach(function(p,i){
+    var tile=document.createElement('div');
+    tile.className='sc-tile';
+    tile.style.filter='brightness(0.9)';
+    tile.style.background=TILE_COLORS[i%TILE_COLORS.length];
+    tile.style.gridRow=(cwPos[i][0]+1)+'';
+    tile.style.gridColumn=(cwPos[i][1]+1)+'';
+    var nameEl=document.createElement('div');
+    nameEl.className='sc-tile-name';
+    nameEl.style.fontSize=nameFontSize(p.name,window.innerWidth/L.cols,28,13)+'px';
+    nameEl.textContent=p.name;
+    var hint=document.createElement('div');
+    hint.style.cssText='font-family:Crimson Text,serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;position:relative;z-index:1;margin-top:6px;font-style:italic;';
+    hint.textContent='tap if dealing';
+    tile.appendChild(nameEl);tile.appendChild(hint);
+    var done=false;
+    tile.addEventListener('touchend',function(e){e.preventDefault();done=true;pickDealer(i);},{passive:false});
+    tile.addEventListener('click',function(){if(!done)pickDealer(i);done=false;});
+    grid.appendChild(tile);
+  });
+}
+
+function pickDealer(idx){
+  if(!dealerPickPhase)return;
+  dealerPickPhase=false;
+  dealerIdx=idx;
+  currentIdx=(dealerIdx+1)%players.length;
   turnHistory=[];
   updateUndoBtnHidden(false);
   updateUndoBtn();
@@ -494,7 +538,7 @@ function confirmTileOrder(){
   document.getElementById('order-confirm-bar').style.display='none';
   document.getElementById('si-fab').style.display='block';
   renderGrid();
-  setTimeout(function(){showToast('🃏 '+esc(players[dealerIdx].name)+' deals first!');},300);
+  setTimeout(function(){showToast('\uD83C\uDCCF '+esc(players[dealerIdx].name)+' deals \u2014 '+esc(players[currentIdx].name)+' scores first');},150);
 }
 
 function updateUndoBtnHidden(h){document.getElementById('undo-btn').style.visibility=h?'hidden':'visible';}
@@ -846,7 +890,7 @@ function showToast(msg){var t=document.getElementById('toast');t.innerHTML=msg;t
 function openScoringIndex(){document.getElementById('scoring-overlay').classList.add('show');}
 function closeScoringIndex(){document.getElementById('scoring-overlay').classList.remove('show');}
 
-window.addEventListener('resize',function(){if(document.getElementById('scorer').classList.contains('active')){if(orderingPhase)renderOrderGrid();else renderGrid();}});
+window.addEventListener('resize',function(){if(document.getElementById('scorer').classList.contains('active')){if(orderingPhase)renderOrderGrid();else if(dealerPickPhase)renderDealerPickGrid();else renderGrid();}});
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 renderLeaderboard();
