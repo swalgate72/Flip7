@@ -246,11 +246,8 @@ button:disabled{background:rgba(255,255,255,0.05)!important;color:#555!important
 
 <!-- SCORING INDEX OVERLAY -->
 <div id="scoring-overlay">
-  <div style="max-width:480px;margin:0 auto;padding:32px 24px 48px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
-      <h2 style="font-family:'Cinzel',serif;font-size:22px;font-weight:700;letter-spacing:3px;color:#fff;">SCORING</h2>
-      <button onclick="closeScoringIndex()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#aaa;padding:8px 16px;font-size:14px;font-family:'Cinzel',serif;letter-spacing:1px;">Close</button>
-    </div>
+  <div style="max-width:480px;margin:0 auto;padding:calc(32px + env(safe-area-inset-top)) 24px calc(32px + env(safe-area-inset-bottom));">
+    <h2 style="font-family:'Cinzel',serif;font-size:22px;font-weight:700;letter-spacing:3px;color:#fff;text-align:center;margin-bottom:28px;">SCORING</h2>
     <div class="si-section">
       <div class="si-section-title">Order to add up</div>
       <div class="si-row"><div><div class="si-combo">1. Number cards</div><div class="si-note">Add the face values (0&ndash;12) using +10, +5, +1</div></div><span class="si-pts">sum</span></div>
@@ -270,6 +267,7 @@ button:disabled{background:rgba(255,255,255,0.05)!important;color:#555!important
       <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;color:var(--cyan);text-transform:uppercase;margin-bottom:6px;">Scoring a round</div>
       <div style="font-family:'Crimson Text',serif;font-size:15px;color:#aab;">Scores go round the table starting left of the dealer and ending with the dealer. The deal then passes left automatically.</div>
     </div>
+    <button onclick="closeScoringIndex()" class="btn btn-holo" style="width:100%;margin-top:24px;padding:18px;border-radius:16px;font-size:17px;letter-spacing:3px;">&larr; BACK</button>
   </div>
 </div>
 
@@ -292,7 +290,7 @@ var setupPlayerCount=4,setupTargetScore=200,setupNames=[];
 
 // Score modal: ordered list of operations so ×2 / ×3 apply to what came before
 // {t:'add',v:n} | {t:'mul',m:2|3} | {t:'bonus'}
-var DENOMS=[50,10,5,1];
+var DENOMS=[1,5,10,50];
 var smOps=[];
 var smPlayerIdx=-1;
 
